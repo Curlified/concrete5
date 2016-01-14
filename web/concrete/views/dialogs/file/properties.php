@@ -2,7 +2,7 @@
 
 use Concrete\Core\File\Exception\InvalidDimensionException;
 use Concrete\Core\File\StorageLocation as FileStorageLocation;
-
+$token = \Core::make('token');
 $dh = Core::make('helper/date'); /* @var $dh \Concrete\Core\Localization\Service\Date */
 ?>
 
@@ -42,40 +42,13 @@ $dh = Core::make('helper/date'); /* @var $dh \Concrete\Core\Localization\Service
             </section>
 
             <?
-            $attribs = FileAttributeKey::getImporterList($fv);
-            $ft = $fv->getType();
-
-            if (count($attribs) > 0) { ?>
-
-            <section>
-                <h4><?= t('%s File Properties', $ft) ?></h4>
-
-                <?
-
-                Loader::element(
-                    'attribute/editable_list',
-                    array(
-                        'attributes'           => $attribs,
-                        'object'               => $f,
-                        'saveAction'           => $controller->action('update_attribute'),
-                        'clearAction'          => $controller->action('clear_attribute'),
-                        'permissionsArguments' => $fp->canEditFileProperties(),
-                        'permissionsCallback'  => function ($ak, $permissionsArguments) {
-                            return $permissionsArguments;
-                        }
-                    )); ?>
-
-                <? } ?>
-            </section>
-
-            <?
-            $attribs = FileAttributeKey::getUserAddedList();
+            $attribs = FileAttributeKey::getList();
 
             if (count($attribs) > 0) { ?>
 
                 <section>
 
-                    <h4><?= t('Other Properties') ?></h4>
+                    <h4><?= t('Attributes') ?></h4>
 
                     <? Loader::element(
                         'attribute/editable_list',
@@ -168,8 +141,9 @@ $dh = Core::make('helper/date'); /* @var $dh \Concrete\Core\Localization\Service
                             <td><?= $dh->formatDateTime($fvv->getDateAdded(), true) ?></td>
                             <? if ($fp->canEditFileContents()) { ?>
                                 <td><a data-action="delete-version"
-                                       data-file-version-id="<?= $fvv->getFileVersionID() ?>" href="javascript:void(0)"><i
-                                            class="fa fa-trash-o"></i></a></td>
+                                       data-file-version-id="<?= $fvv->getFileVersionID() ?>"
+                                       data-token="<?= $token->generate('version/delete/' . $fvv->getFileID() . "/" . $fvv->getFileVersionId()) ?>"
+                                       href="javascript:void(0)"><i class="fa fa-trash-o"></i></a></td>
                             <? } ?>
                         </tr>
 
@@ -326,7 +300,7 @@ $dh = Core::make('helper/date'); /* @var $dh \Concrete\Core\Localization\Service
                     var fvID = $(this).attr('data-file-version-id');
                     $.concreteAjax({
                         url: '<?=URL::to('/ccm/system/file/delete_version')?>',
-                        data: {'fID': '<?=$f->getFileID()?>', 'fvID': fvID},
+                        data: {'fID': '<?=$f->getFileID()?>', 'fvID': fvID, ccm_token: $(this).data('token')},
                         success: function (r) {
                             my.handleAjaxResponse(r, function () {
                                 var $row = $versions.find('tr[data-file-version-id=' + fvID + ']');

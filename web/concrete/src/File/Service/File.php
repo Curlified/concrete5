@@ -2,6 +2,7 @@
 
 namespace Concrete\Core\File\Service;
 
+use Concrete\Core\File\Exception\RequestTimeoutException;
 use Config;
 use Environment;
 use Core;
@@ -247,18 +248,19 @@ class File
      */
     public function getTemporaryDirectory()
     {
-        if (defined('DIR_TMP')) {
-            return DIR_TMP;
+        $temp = Config::get('concrete.filesystem.temp_directory');
+        if ($temp && @is_dir($temp)) {
+            return $temp;
         }
 
-        if (!is_dir(DIR_FILES_UPLOADED . '/tmp')) {
-            @mkdir(DIR_FILES_UPLOADED . '/tmp', Config::get('concrete.filesystem.permissions.directory'));
-            @chmod(DIR_FILES_UPLOADED . '/tmp', Config::get('concrete.filesystem.permissions.directory'));
-            @touch(DIR_FILES_UPLOADED . '/tmp/index.html');
+        if (!is_dir(DIR_FILES_UPLOADED_STANDARD . '/tmp')) {
+            @mkdir(DIR_FILES_UPLOADED_STANDARD . '/tmp', Config::get('concrete.filesystem.permissions.directory'));
+            @chmod(DIR_FILES_UPLOADED_STANDARD . '/tmp', Config::get('concrete.filesystem.permissions.directory'));
+            @touch(DIR_FILES_UPLOADED_STANDARD . '/tmp/index.html');
         }
 
-        if (is_dir(DIR_FILES_UPLOADED . '/tmp') && is_writable(DIR_FILES_UPLOADED . '/tmp')) {
-            return DIR_FILES_UPLOADED . '/tmp';
+        if (is_dir(DIR_FILES_UPLOADED_STANDARD . '/tmp') && is_writable(DIR_FILES_UPLOADED_STANDARD . '/tmp')) {
+            return DIR_FILES_UPLOADED_STANDARD . '/tmp';
         }
 
         if ($temp = getenv('TMP')) {
@@ -299,9 +301,11 @@ class File
      * @param string $filename
      * @param string $timeout
      *
+     * @throws RequestTimeoutException Request timed out
+     *
      * @return string|bool Returns false in case of failure
      */
-    public function getContents($file, $timeout = 5)
+    public function getContents($file, $timeout = null)
     {
         $url = @parse_url($file);
         if (isset($url['scheme']) && isset($url['host'])) {
@@ -322,14 +326,26 @@ class File
                     }
                 }
 
+                if ($timeout === null) {
+                    $timeout = Config::get('app.curl.connectionTimeout');
+                }
+
                 curl_setopt($curl_handle, CURLOPT_URL, $file);
                 curl_setopt($curl_handle, CURLOPT_CONNECTTIMEOUT, $timeout);
                 curl_setopt($curl_handle, CURLOPT_RETURNTRANSFER, 1);
                 curl_setopt($curl_handle, CURLOPT_SSL_VERIFYPEER, Config::get('app.curl.verifyPeer'));
 
                 $contents = curl_exec($curl_handle);
+                $error = curl_errno($curl_handle);
+
+
                 $http_code = curl_getinfo($curl_handle, CURLINFO_HTTP_CODE);
                 curl_close($curl_handle);
+
+                if ($error == 28) {
+                    throw new RequestTimeoutException(t('Request timed out.'));
+                }
+
                 if ($http_code >= 400) {
                     return false;
                 }
@@ -462,7 +478,7 @@ class File
         if ($checkFile === __FILE__) {
             $checkFile = strtolower(__FILE__);
         }
-        if (is_file($checkFile)) {
+        if (@is_file($checkFile)) {
             $same = (strcasecmp($path1, $path2) === 0) ? true : false;
         } else {
             $same = ($path1 === $path2) ? true : false;

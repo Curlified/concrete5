@@ -50,6 +50,10 @@
         var my = this,
             $fileUploaders = $('.ccm-file-manager-upload'),
             $fileUploader = $fileUploaders.filter('#ccm-file-manager-upload-prompt'),
+            $maxWidth = $fileUploaders.data('image-max-width'),
+            $maxHeight = $fileUploaders.data('image-max-height'),
+            $imageResize = ($maxWidth > 0 && $maxHeight>0),
+            $quality = $fileUploaders.data('image-quality'),
             errors = [],
             files = [],
             error_template = _.template(
@@ -60,6 +64,10 @@
                 url: CCM_DISPATCHER_FILENAME + '/ccm/system/file/upload',
                 dataType: 'json',
                 formData: {'ccm_token': CCM_SECURITY_TOKEN},
+                disableImageResize: !$imageResize,
+                imageQuality: ($quality > 0 ? $quality : 85),
+                imageMaxWidth:($maxWidth > 0 ? $maxWidth : 1920),
+                imageMaxHeight:($maxHeight > 0 ? $maxHeight : 1080),
                 error: function(r) {
                     var message = r.responseText;
                     try {
@@ -76,12 +84,14 @@
                 },
                 start: function() {
                     errors = [];
-                    $('#ccm-file-upload-progress-wrapper').remove();
                     $('<div />', {'id': 'ccm-file-upload-progress-wrapper'}).html(my._templateFileProgress({'progress': 100})).appendTo(document.body);
                     $.fn.dialog.open({
                         title: ccmi18n_filemanager.uploadProgress,
                         width: 400,
                         height: 50,
+                        onClose: function($dialog) {
+                            $dialog.jqdialog('destroy').remove();
+                        },
                         element: $('#ccm-file-upload-progress-wrapper'),
                         modal: true
                     });
@@ -96,7 +106,7 @@
                     if (errors.length) {
                         ConcreteAlert.dialog(ccmi18n_filemanager.uploadFailed, error_template({errors: errors}));
                     } else {
-                        my.launchUploadCompleteDialog(files);
+                        my._launchUploadCompleteDialog(files);
                         files = [];
                     }
                 }
@@ -107,37 +117,16 @@
         $fileUploader.fileupload(args);
     };
 
-    ConcreteFileManager.prototype.launchUploadCompleteDialog = function(files) {
+    ConcreteFileManager.prototype._launchUploadCompleteDialog = function(files) {
         var my = this;
-        if (files && files.length && files.length > 0) {
-            var data = '';
-            _.each(files, function(file) {
-               data += 'fID[]=' + file.fID + '&';
-            });
-            data = data.substring(0, data.length - 1);
-            $.fn.dialog.open({
-                width: '660',
-                height: '500',
-                href: CCM_DISPATCHER_FILENAME + '/ccm/system/dialogs/file/upload_complete',
-                modal: true,
-                data: data,
-                onClose: function() {
-                  my.refreshResults();
-                },
-                onOpen: function() {
-                    var data = {filemanager: my}
-                    ConcreteEvent.publish('FileManagerUploadCompleteDialogOpen', data);
-                },
-                title: ccmi18n_filemanager.uploadComplete
-            });
-        }
+        ConcreteFileManager.launchUploadCompleteDialog(files, my);
     }
 
     ConcreteFileManager.prototype.setupEvents = function() {
         var my = this;
         ConcreteEvent.unsubscribe('FileManagerAddFilesComplete');
         ConcreteEvent.subscribe('FileManagerAddFilesComplete', function(e, data) {
-            my.launchUploadCompleteDialog(data.files);
+            my._launchUploadCompleteDialog(data.files);
         });
         ConcreteEvent.unsubscribe('FileManagerDeleteFilesComplete');
         ConcreteEvent.subscribe('FileManagerDeleteFilesComplete', function(e, data) {
@@ -265,6 +254,32 @@
         });
     };
 
+    ConcreteFileManager.launchUploadCompleteDialog = function(files, my) {
+        if (files && files.length && files.length > 0) {
+            var data = '';
+            _.each(files, function(file) {
+                data += 'fID[]=' + file.fID + '&';
+            });
+            data = data.substring(0, data.length - 1);
+            $.fn.dialog.open({
+                width: '660',
+                height: '500',
+                href: CCM_DISPATCHER_FILENAME + '/ccm/system/dialogs/file/upload_complete',
+                modal: true,
+                data: data,
+                onClose: function() {
+                    var data = {filemanager: my}
+                    ConcreteEvent.publish('FileManagerUploadCompleteDialogClose', data);
+                },
+                onOpen: function() {
+                    var data = {filemanager: my}
+                    ConcreteEvent.publish('FileManagerUploadCompleteDialogOpen', data);
+                },
+                title: ccmi18n_filemanager.uploadComplete
+            });
+        }
+    }
+
     ConcreteFileManager.getFileDetails = function(fID, callback) {
         $.ajax({
             type: 'post',
@@ -297,8 +312,9 @@
                 '<% } %>' +
                 '<% if (item.canEditFile && item.canEditFileContents) { %>' +
                     '<li><a class="dialog-launch" dialog-modal="true" dialog-width="90%" dialog-height="70%" dialog-title="' + ccmi18n_filemanager.edit + '" href="' + CCM_TOOLS_PATH + '/files/edit?fID=<%=item.fID%>">' + ccmi18n_filemanager.edit + '</a></li>' +
+                    '<li><a class="dialog-launch" dialog-modal="true" dialog-width="90%" dialog-height="70%" dialog-title="' + ccmi18n_filemanager.thumbnailImages + '" href="' + CCM_DISPATCHER_FILENAME + '/ccm/system/dialogs/file/thumbnails?fID=<%=item.fID%>">' + ccmi18n_filemanager.thumbnailImages + '</a></li>' +
                 '<% } %>' +
-                '<li><a class="dialog-launch" dialog-modal="true" dialog-width="680" dialog-height="450" dialog-title="' + ccmi18n_filemanager.properties + '" href="' + CCM_DISPATCHER_FILENAME + '/ccm/system/dialogs/file/properties?fID=<%=item.fID%>">' + ccmi18n_filemanager.properties + '</a></li>' +
+                '<li><a class="dialog-launch" dialog-modal="true" dialog-width="850" dialog-height="450" dialog-title="' + ccmi18n_filemanager.properties + '" href="' + CCM_DISPATCHER_FILENAME + '/ccm/system/dialogs/file/properties?fID=<%=item.fID%>">' + ccmi18n_filemanager.properties + '</a></li>' +
                 '<% if (item.canReplaceFile) { %>' +
                     '<li><a class="dialog-launch" dialog-modal="true" dialog-width="500" dialog-height="200" dialog-title="' + ccmi18n_filemanager.replace + '" href="' + CCM_TOOLS_PATH + '/files/replace?fID=<%=item.fID%>">' + ccmi18n_filemanager.replace + '</a></li>' +
                 '<% } %>' +

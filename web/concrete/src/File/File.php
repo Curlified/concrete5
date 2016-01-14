@@ -176,11 +176,17 @@ class File implements \Concrete\Core\Permission\ObjectInterface
         }
 
         $f = static::getByID($fID);
-        $path = $f->getRelativePath();
 
-        CacheLocal::set('file_relative_path', $fID, $path);
-        return $path;
+        if ($f) {
+            $path = $f->getRelativePath();
+
+            CacheLocal::set('file_relative_path', $fID, $path);
+            return $path;
+        }
+
+        return false;
     }
+
 
     protected function save()
     {
@@ -379,8 +385,11 @@ class File implements \Concrete\Core\Permission\ObjectInterface
             if ($version->isApproved()) {
                 $cloneVersion = clone $version;
                 $cloneVersion->setFile($nf);
-                $prefix = $importer->generatePrefix();
-                $filesystem->write($cf->prefix($prefix, $version->getFilename()), $version->getFileResource()->read(), array(
+                do {
+                    $prefix = $importer->generatePrefix();
+                    $path = $cf->prefix($prefix, $version->getFilename());
+                } while($filesystem->has($path));
+                $filesystem->write($path, $version->getFileResource()->read(), array(
                     'visibility' => AdapterInterface::VISIBILITY_PUBLIC,
                     'mimetype' => Core::make('helper/mime')->mimeFromExtension($fi->getExtension($version->getFilename()))
                 ));
@@ -526,14 +535,15 @@ class File implements \Concrete\Core\Permission\ObjectInterface
             $fv->delete(true);
         }
 
-        // now from the DB
-        $em = $db->getEntityManager();
-        $em->remove($this);
-        $em->flush();
         $db->Execute("delete from FileSetFiles where fID = ?", array($this->fID));
         $db->Execute("delete from FileSearchIndexAttributes where fID = ?", array($this->fID));
         $db->Execute("delete from DownloadStatistics where fID = ?", array($this->fID));
         $db->Execute("delete from FilePermissionAssignments where fID = ?", array($this->fID));
+
+        // now from the DB
+        $em = $db->getEntityManager();
+        $em->remove($this);
+        $em->flush();
     }
 
     /**
@@ -619,11 +629,14 @@ class File implements \Concrete\Core\Permission\ObjectInterface
         $fve = new \Concrete\Core\File\Event\FileAccess($fv);
         Events::dispatch('on_file_download', $fve);
 
-        $db = Loader::db();
-        $db->Execute(
-            'insert into DownloadStatistics (fID, fvID, uID, rcID) values (?, ?, ?, ?)',
-            array($this->fID, intval($fvID), $uID, $rcID)
-        );
+        $config = Core::make('config');
+        if ($config->get('concrete.statistics.track_downloads')) {
+            $db = Loader::db();
+            $db->Execute(
+                'insert into DownloadStatistics (fID, fvID, uID, rcID) values (?, ?, ?, ?)',
+                array($this->fID, intval($fvID), $uID, $rcID)
+            );
+        }
     }
 
     /**

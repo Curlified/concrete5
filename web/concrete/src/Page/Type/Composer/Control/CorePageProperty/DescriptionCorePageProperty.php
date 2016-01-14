@@ -1,7 +1,8 @@
 <?php
+
 namespace Concrete\Core\Page\Type\Composer\Control\CorePageProperty;
 
-use Loader;
+use Core;
 use Page;
 
 class DescriptionCorePageProperty extends CorePageProperty
@@ -9,8 +10,12 @@ class DescriptionCorePageProperty extends CorePageProperty
     public function __construct()
     {
         $this->setCorePagePropertyHandle('description');
-        $this->setPageTypeComposerControlName(tc('PageTypeComposerControlName', 'Description'));
         $this->setPageTypeComposerControlIconSRC(ASSETS_URL . '/attributes/textarea/icon.png');
+    }
+
+    public function getPageTypeComposerControlName()
+    {
+        return tc('PageTypeComposerControlName', 'Description');
     }
 
     public function publishToPage(Page $c, $data, $controls)
@@ -21,18 +26,26 @@ class DescriptionCorePageProperty extends CorePageProperty
 
     public function validate()
     {
-        $e = Loader::helper('validation/error');
-        if (!$this->getPageTypeComposerControlDraftValue()) {
-            $e->add(t('You must specify a page description.'));
+
+        $e = Core::make('helper/validation/error');
+        $val = $this->getRequestValue();
+        if ($val['description']) {
+            $description = $val['description'];
+        } else {
+            $description = $this->getPageTypeComposerControlDraftValue();
+        }
+        if (!$description) {
+            $control = $this->getPageTypeComposerFormLayoutSetControlObject();
+            $e->add(t('You haven\'t chosen a valid %s', $control->getPageTypeComposerControlLabel()));
 
             return $e;
         }
     }
 
-    public function getRequestValue()
+    public function getRequestValue($args = false)
     {
-        $data = parent::getRequestValue();
-        $data['description'] = Loader::helper('security')->sanitizeString($data['description']);
+        $data = parent::getRequestValue($args);
+        $data['description'] = Core::make('helper/security')->sanitizeString($data['description']);
 
         return $data;
     }
@@ -45,5 +58,4 @@ class DescriptionCorePageProperty extends CorePageProperty
             return $c->getCollectionDescription();
         }
     }
-
 }

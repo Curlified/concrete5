@@ -99,20 +99,41 @@ class BlockView extends AbstractView
     public function action($task)
     {
         try {
-            if (is_object($this->block)) {
+            if ($this->viewToRender == 'add') {
+
+                $c = $this->area->getAreaCollectionObject();
+                $arguments = array('/ccm/system/block/action/add',
+                    $c->getCollectionID(),
+                    urlencode($this->area->getAreaHandle()),
+                    $this->blockType->getBlockTypeID(),
+                    $task
+                );
+                return call_user_func_array(array('\URL', 'to'), $arguments);
+
+            } else if (is_object($this->block)) {
                 if (is_object($this->block->getProxyBlock())) {
                     $b = $this->block->getProxyBlock();
                 } else {
                     $b = $this->block;
                 }
 
-                $c = Page::getCurrentPage();
-                if (is_object($b) && is_object($c)) {
-                    $arguments = func_get_args();
-                    $arguments[] = $b->getBlockID();
-                    array_unshift($arguments, $c);
-
-                    return call_user_func_array(array('\URL', 'page'), $arguments);
+                if ($this->viewToRender == 'edit') {
+                    $c = $this->area->getAreaCollectionObject();
+                    $arguments = array('/ccm/system/block/action/edit',
+                        $c->getCollectionID(),
+                        urlencode($this->area->getAreaHandle()),
+                        $b->getBlockID(),
+                        $task
+                    );
+                    return call_user_func_array(array('\URL', 'to'), $arguments);
+                } else {
+                    $c = Page::getCurrentPage();
+                    if (is_object($b) && is_object($c)) {
+                        $arguments = func_get_args();
+                        $arguments[] = $b->getBlockID();
+                        array_unshift($arguments, $c);
+                        return call_user_func_array(array('\URL', 'page'), $arguments);
+                    }
                 }
             }
         } catch (Exception $e) {
@@ -157,6 +178,7 @@ class BlockView extends AbstractView
                         ) . '/' . $this->controller->blockViewRenderOverride . '.php';
                     $this->setViewTemplate($env->getPath($template, $this->blockTypePkgHandle));
                 } else {
+                    $bFilename = false;
                     if ($this->block) {
                         $bFilename = $this->block->getBlockFilename();
                         $bvt = new BlockViewTemplate($this->block);
@@ -324,13 +346,13 @@ class BlockView extends AbstractView
         return $base;
     }
 
-    public function inc($file, $args = array())
+    public function inc($fileToInclude, $args = array())
     {
         extract($args);
         extract($this->getScopeItems());
         $env = Environment::get();
         include $env->getPath(
-            DIRNAME_BLOCKS . '/' . $this->blockType->getBlockTypeHandle() . '/' . $file,
+            DIRNAME_BLOCKS . '/' . $this->blockType->getBlockTypeHandle() . '/' . $fileToInclude,
             $this->blockTypePkgHandle
         );
     }
@@ -348,8 +370,9 @@ class BlockView extends AbstractView
     protected function useBlockCache()
     {
         $u = new User();
+        $c = Page::getCurrentPage();
         if ($this->viewToRender == 'view' && Config::get('concrete.cache.blocks') && $this->block instanceof Block
-            && $this->block->cacheBlockOutput()
+            && $this->block->cacheBlockOutput() && $c->isPageDraft() === false
         ) {
             if ((!$u->isRegistered() || ($this->block->cacheBlockOutputForRegisteredUsers())) &&
                 (($_SERVER['REQUEST_METHOD'] != 'POST' || ($this->block->cacheBlockOutputOnPost() == true)))
@@ -364,6 +387,11 @@ class BlockView extends AbstractView
     public function field($field)
     {
         return $field;
+    }
+
+    public function usedBlockCacheDuringRender()
+    {
+        return $this->didPullFromOutputCache;
     }
 
     public function finishRender($contents)

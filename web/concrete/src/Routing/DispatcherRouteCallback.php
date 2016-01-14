@@ -1,8 +1,10 @@
 <?php
+
 namespace Concrete\Core\Routing;
 
-use \Concrete\Core\Page\Event as PageEvent;
+use Concrete\Core\Page\Event as PageEvent;
 use Concrete\Core\Page\Theme\Theme;
+use Concrete\Core\Url\Url;
 use PermissionKey;
 use Request;
 use User;
@@ -18,7 +20,6 @@ use Session;
 
 class DispatcherRouteCallback extends RouteCallback
 {
-
     protected function sendResponse(View $v, $code = 200)
     {
         $contents = $v->render();
@@ -94,7 +95,17 @@ class DispatcherRouteCallback extends RouteCallback
         }
         if (!$c->cPathFetchIsCanonical) {
             // Handle redirect URL (additional page paths)
-            return Redirect::page($c, 301)->send();
+            /** @var Url $url */
+            $url = \Core::make('url/manager')->resolve(array($c));
+            $query = $url->getQuery();
+            $query->modify($request->getQueryString());
+
+            $url = $url->setQuery($query);
+
+            $response = Redirect::to($url);
+            $response->setStatusCode(301);
+
+            return $response;
         }
 
         // maintenance mode
@@ -109,7 +120,7 @@ class DispatcherRouteCallback extends RouteCallback
         }
 
         if ($c->getCollectionPointerExternalLink() != '') {
-            return Redirect::url($c->getCollectionPointerExternalLink(), 301)->send();
+            return Redirect::url($c->getCollectionPointerExternalLink(), 301);
         }
 
         $cp = new Permissions($c);
@@ -154,7 +165,7 @@ class DispatcherRouteCallback extends RouteCallback
 
         // Now we check to see if we're on the home page, and if it multilingual is enabled,
         // and if so, whether we should redirect to the default language page.
-        if (Config::get('concrete.multilingual.enabled')) {
+        if (\Core::make('multilingual/detector')->isEnabled()) {
             $dl = Core::make('multilingual/detector');
             if ($c->getCollectionID() == HOME_CID && Config::get('concrete.multilingual.redirect_home_to_default_locale')) {
                 // Let's retrieve the default language
@@ -191,7 +202,10 @@ class DispatcherRouteCallback extends RouteCallback
         }
         $requestTask = $controller->getRequestAction();
         $requestParameters = $controller->getRequestActionParameters();
-        $controller->runAction($requestTask, $requestParameters);
+        $response = $controller->runAction($requestTask, $requestParameters);
+        if ($response instanceof \Symfony\Component\HttpFoundation\Response) {
+            return $response;
+        }
 
         $c->setController($controller);
         $view = $controller->getViewObject();
@@ -203,6 +217,7 @@ class DispatcherRouteCallback extends RouteCallback
                 $mobileTheme = Theme::getByID(Config::get('concrete.misc.mobile_theme_id'));
                 if ($mobileTheme instanceof Theme) {
                     $view->setViewTheme($mobileTheme);
+                    $controller->setTheme($mobileTheme);
                 }
             }
         }
@@ -215,7 +230,7 @@ class DispatcherRouteCallback extends RouteCallback
 
     public static function getRouteAttributes($callback)
     {
-        $callback = new DispatcherRouteCallback($callback);
+        $callback = new self($callback);
 
         return array('callback' => $callback);
     }

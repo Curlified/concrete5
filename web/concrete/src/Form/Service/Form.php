@@ -161,7 +161,7 @@ class Form
         }
 
         $checked = false;
-        if ($isChecked && (!isset($_REQUEST[$_field])) && ($_SERVER['REQUEST_METHOD'] != 'POST')) {
+        if ($isChecked && \Request::request($_field) === null && !\Request::isPost()) {
             $checked = true;
         } else {
             $requestValue = $this->getRequestValue($key);
@@ -233,7 +233,13 @@ class Form
                 $checked = true;
             }
         }
-        $str = '<input type="radio" id="' . $key . $this->radioIndex . '" name="' . $key . '" value="' . $value . '"';
+        $id = null;
+        if (isset($miscFields['id'])) {
+            $id = $miscFields['id'];
+            unset($miscFields['id']);
+        }
+        $id = $id ?: $key.$this->radioIndex;
+        $str = '<input type="radio" id="' . $id . '" name="' . $key . '" value="' . $value . '"';
         $str .= $this->parseMiscFields('ccm-input-radio', $miscFields);
         if ($checked) {
             $str .= ' checked="checked"';
@@ -318,7 +324,7 @@ class Form
         if (is_string($requestValue)) {
             $value = $requestValue;
         }
-        $value = str_replace('"', '&#34;', $value);
+        $value = h($value);
 
         return "<input type=\"$type\" id=\"$key\" name=\"$key\" value=\"$value\"" . $this->parseMiscFields("form-control ccm-input-$type", $miscFields) . ' />';
     }
@@ -435,14 +441,17 @@ class Form
         if (is_array($requestValue) && isset($requestValue[0]) && is_string($requestValue[0])) {
             $selectedValue = (string) $requestValue[0];
         } elseif ($requestValue !== false) {
-            $selectedValue = (string) $requestValue;
+            if (!is_array($requestValue)) {
+                $selectedValue = (string)$requestValue;
+            } else {
+                $selectedValue = '';
+            }
         }
         if (substr($key, -2) == '[]') {
             $_key = substr($key, 0, -2);
             $id = $_key . $this->selectIndex;
             $this->selectIndex++;
         } else {
-            $_key = $key;
             $id = $key;
         }
         $str = '<select id="' . $id . '" name="' . $key . '"' . $this->parseMiscFields('form-control', $miscFields) . '>';
@@ -486,8 +495,7 @@ class Form
         if (!is_array($optionValues)) {
             $optionValues = array();
         }
-        $str = "<input type=\"hidden\" class=\"ignore\" name=\"$key\" value=\"\" />";
-        $str .= "<select id=\"$key\" name=\"{$key}[]\" multiple=\"multiple\"" . $this->parseMiscFields('form-control', $miscFields) . ">";
+        $str = "<select id=\"$key\" name=\"{$key}[]\" multiple=\"multiple\"" . $this->parseMiscFields('form-control', $miscFields) . ">";
         foreach ($optionValues as $k => $text) {
             $str .= '<option value="' . $k . '"';
             if (in_array($k, $selectedValues)) {

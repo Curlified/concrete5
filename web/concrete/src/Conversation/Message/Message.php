@@ -14,6 +14,7 @@ use \Concrete\Core\Foundation\Object;
 use User;
 use UserInfo;
 use Concrete\Core\Utility\IPAddress;
+use Events;
 
 class Message extends Object implements \Concrete\Core\Permission\ObjectInterface
 {
@@ -331,8 +332,8 @@ class Message extends Object implements \Concrete\Core\Permission\ObjectInterfac
                 $this->getConversationMessageID(),
                 $f->getFileID()
             ));
-            $fs = FileSet::createAndGetSet(Config::get('concrete.conversations.attachments_file_set'), FileSet::TYPE_PUBLIC, USER_SUPER_ID);
-            $fsToRemove = FileSet::createAndGetSet(Config::get('concrete.conversations.attachments_pending_file_set'), FileSet::TYPE_PUBLIC, USER_SUPER_ID);
+            $fs = FileSet::createAndGetSet(Config::get('conversations.attachments_file_set'), FileSet::TYPE_PUBLIC, USER_SUPER_ID);
+            $fsToRemove = FileSet::createAndGetSet(Config::get('conversations.attachments_pending_file_set'), FileSet::TYPE_PUBLIC, USER_SUPER_ID);
             $fs->addFileToSet($f);
             $fsToRemove->removeFileFromSet($f);
         }
@@ -408,6 +409,11 @@ class Message extends Object implements \Concrete\Core\Permission\ObjectInterfac
                           array($cnvMessageSubject, $cnvMessageBody, $date, $cnvMessageParentID, $cnvEditorID, $cnvMessageLevel, $cnvID, $uID, $cnvMessageAuthorName, $cnvMessageAuthorEmail, $cnvMessageAuthorWebsite, ($ip === false)?(''):($ip->getIp()), $_SERVER['HTTP_USER_AGENT']));
 
         $cnvMessageID = $db->Insert_ID();
+        
+        $message = static::getByID($cnvMessageID);
+
+        $event = new MessageEvent($message);
+        Events::dispatch('on_new_conversation_message', $event);
 
         if ($cnv instanceof \Concrete\Core\Conversation\Conversation) {
             $cnv->updateConversationSummary();

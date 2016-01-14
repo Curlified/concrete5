@@ -53,14 +53,16 @@ class LocalConfiguration extends Configuration implements ConfigurationInterface
 
         $url = \Core::getApplicationURL(true);
         $url = $url->setPath($rel);
-        return (string) $url;
+        return trim((string) $url, '/');
     }
 
     public function loadFromRequest(\Concrete\Core\Http\Request $req)
     {
         $data = $req->get('fslType');
         $this->path = rtrim($data['path'], '/');
-        $this->relativePath = rtrim($data['relativePath'], '/');
+        if (isset($data['relativePath'])) {
+            $this->relativePath = rtrim($data['relativePath'], '/');
+        }
     }
 
     /**

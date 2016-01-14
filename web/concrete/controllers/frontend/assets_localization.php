@@ -118,7 +118,8 @@ var ccmi18n = {
   fontSize: <?=json_encode(t('Font Size'))?>,
   letterSpacing: <?=json_encode(t('Letter spacing'))?>,
   lineHeight: <?=json_encode(t('Line Height'))?>,
-  emptyArea: <?=json_encode(t('Empty %s Area', '<%- area_handle %>'))?>
+  emptyArea: <?=json_encode(t('Empty %s Area', '<%- area_handle %>'))?>,
+  fullArea: <?=json_encode(t('This area is full!'))?>
 };
 
 var ccmi18n_editor = {
@@ -197,6 +198,7 @@ var ccmi18n_filemanager = {
   duplicateFile: <?=json_encode(t('Copy File'))?>,
   clear: <?=json_encode(t('Clear'))?>,
   edit: <?=json_encode(t('Edit'))?>,
+  thumbnailImages: <?=json_encode(t('Thumbnail Images'))?>,
   replace: <?=json_encode(t('Replace'))?>,
   duplicate: <?=json_encode(t('Copy'))?>,
   chooseNew: <?=json_encode(t('Choose New File'))?>,
@@ -265,8 +267,18 @@ var ccmi18n_helpGuides = {
     {title: <?=json_encode(t('Edit Menu'))?>, text: <?=json_encode(t('Use this menu to edit a block\'s contents, change its display, or remove it entirely.'))?>},
     {title: <?=json_encode(t('Save Changes'))?>, text: <?=json_encode(t("When you're done editing you can Save Changes for other editors to see, or Publish Changes to make your changes live immediately."))?>}
   ],
+    'add-content-edit-mode': [
+    {title: <?=json_encode(t('Add Mode Active'))?>, text: <?=json_encode(t('The highlighted button makes it obvious you\'re in Add Content mode.'))?>},
+    {title: <?=json_encode(t('Add Panel'))?>, text: <?=json_encode(t('This is the Add Content Panel.'))?>},
+    {title: <?=json_encode(t('Content Selector'))?>, text: <?=json_encode(t('Click here to choose between adding blocks, clipboard items, stacks and stack contents.'))?>},
+    {title: <?=json_encode(t('Search Blocks'))?>, text: <?=json_encode(t("You can easily filter the blocks in the panel by searching here."))?>},
+    {title: <?=json_encode(t('Add Blocks'))?>, text: <?=json_encode(t("Click and drag blocks from the add panel into the page to add them."))?>}
+    ],
   'change-content': [
     {title: <?=json_encode(t('Enter Edit Mode'))?>, text: <?=json_encode(t('First, click the "Edit Page" button. This will enter edit mode for this page.'))?>}
+  ],
+  'add-content': [
+    {title: <?=json_encode(t('Enter Edit Mode'))?>, text: <?=json_encode(t('Click the "Add Content" button to enter edit mode, with the Add Content panel active.'))?>}
   ],
   'dashboard': [
     {title: <?=json_encode(t('Dashboard Panel'))?>, text: <?=json_encode(t('The dashboard is where you go to manage aspects of your site that have to do with more than the content on just one page. Click the sliders icon.'))?>},
@@ -412,13 +424,14 @@ jQuery.Redactor.opts.langs[<?=json_encode($locale)?>] = {
   lightbox_link_type_iframe_height: <?=json_encode(t('Height'))?>,
   customStyles: <?=json_encode(t('Custom Styles'))?>,
   remove_font: <?=json_encode(t('Remove font'))?>,
-  change_font_family: <?=json_encode(t('Change font family'))?>,
-  remove_font_size: <?=json_encode(t('Remove font size'))?>,
-  change_font_size: <?=json_encode(t('Change font size'))?>,
+  change_font_family: <?=json_encode(t('Change Font Family'))?>,
   remove_style: <?=json_encode(t('Remove Style'))?>,
   insert_character: <?=json_encode(t('Insert Character'))?>,
   undo: <?=json_encode(t('Undo'))?>,
   redo: <?=json_encode(t('Redo'))?>,
+  remove_font_family: <?=json_encode(t('Remove Font Family'))?>,
+  remove_font_size: <?=json_encode(t('Remove Font Size'))?>,
+  change_font_size: <?=json_encode(t('Change Font Size'))?>,
   /* end concrete5 */
   underline: <?=json_encode(t('Underline'))?>,
   alignment: <?=json_encode(t('Alignment'))?>,

@@ -29,6 +29,11 @@ use User;
 class Collection extends Object
 {
     public $cID;
+    protected $vObj;
+    protected $cHandle;
+    protected $cDateAdded;
+    protected $cDateModified;
+
     protected $attributes = array();
 
     /* version specific stuff */
@@ -214,7 +219,7 @@ class Collection extends Object
             // otherwise, we have to clone this version of the collection entirely,
             // and return that collection.
 
-            $nc = $this->cloneVersion($versionComments);
+            $nc = $this->cloneVersion(null);
 
             return $nc;
         }
@@ -376,7 +381,7 @@ class Collection extends Object
 
     public function reindex($index = false, $actuallyDoReindex = true)
     {
-        if ($this->isAlias()) {
+        if ($this->isAlias() && !$this->isExternalLink()) {
             return false;
         }
         if ($actuallyDoReindex || Config::get('concrete.page.search.always_reindex') == true) {
@@ -589,7 +594,11 @@ class Collection extends Object
             $bID = $r['bID'];
             $obj = StyleSet::getByID($issID);
             if (is_object($obj)) {
-                $obj = new BlockCustomStyle($obj, $bID, $arHandle);
+                $b = new Block();
+                $b->bID = $bID;
+                $a = new Area($arHandle);
+                $b->setBlockAreaObject($a);
+                $obj = new BlockCustomStyle($obj, $b, $this->getCollectionThemeObject());
                 $psss[] = $obj;
                 CacheLocal::set(
                           'pssObject',
@@ -603,7 +612,8 @@ class Collection extends Object
             $issID = $r['issID'];
             $obj = StyleSet::getByID($issID);
             if (is_object($obj)) {
-                $obj = new AreaCustomStyle($obj, $r['arHandle']);
+                $a = new Area($r['arHandle']);
+                $obj = new AreaCustomStyle($obj, $a, $this->getCollectionThemeObject());
                 $psss[] = $obj;
                 CacheLocal::set(
                           'pssObject',
@@ -636,7 +646,11 @@ class Collection extends Object
                         $issID = $r['issID'];
                         $obj = StyleSet::getByID($issID);
                         if (is_object($obj)) {
-                            $obj = new BlockCustomStyle($obj, $r['bID'], $r['arHandle']);
+                            $b = new Block();
+                            $b->bID = $r['bID'];
+                            $a = new Area($r['arHandle']);
+                            $b->setBlockAreaObject($a);
+                            $obj = new BlockCustomStyle($obj, $b, $this->getCollectionThemeObject());
                             $psss[] = $obj;
                             CacheLocal::set(
                                       'pssObject',
@@ -653,7 +667,7 @@ class Collection extends Object
         foreach ($psss as $st) {
             $css = $st->getCSS();
             if ($css !== '') {
-                $styleHeader .= '<style type="text/css" data-style-set="'.$st->getStyleSet()->getID().'">'.$css.'</style>';
+                $styleHeader .= $st->getStyleWrapper($css);
             }
         }
 
@@ -680,7 +694,7 @@ class Collection extends Object
         $areaHandle = $area->getAreaHandle();
         if ($force || isset($styles[$areaHandle])) {
             $pss = isset($styles[$areaHandle]) ? StyleSet::getByID($styles[$areaHandle]) : null;
-            $result = new AreaCustomStyle($pss, $areaHandle);
+            $result = new AreaCustomStyle($pss, $area, $this->getCollectionThemeObject());
         }
 
         return $result;
@@ -755,7 +769,7 @@ class Collection extends Object
      * @return Collection
      */
 
-    public function rescanDisplayOrder($areaName)
+    public function rescanDisplayOrder($arHandle)
     {
         // this collection function fixes the display order properties for all the blocks within the collection/area. We select all the items
         // order by display order, and fix the sequence
@@ -763,14 +777,16 @@ class Collection extends Object
         $db = Loader::db();
         $cID = $this->cID;
         $cvID = $this->vObj->cvID;
-        $q = "select bID from CollectionVersionBlocks where cID = '$cID' and cvID = '{$cvID}' and arHandle='$arHandle' order by cbDisplayOrder asc";
-        $r = $db->query($q);
+        $args = array($cID, $cvID, $arHandle);
+        $q = "select bID from CollectionVersionBlocks where cID = ? and cvID = ? and arHandle=? order by cbDisplayOrder asc";
+        $r = $db->query($q, $args);
 
         if ($r) {
             $displayOrder = 0;
             while ($row = $r->fetchRow()) {
-                $q = "update CollectionVersionBlocks set cbDisplayOrder = '$displayOrder' where cID = '$cID' and cvID = '{$cvID}' and arHandle = '$arHandle' and bID = '{$row['bID']}'";
-                $r2 = $db->query($q);
+                $args = array($displayOrder, $cID, $cvID, $arHandle, $row['bID']);
+                $q = "update CollectionVersionBlocks set cbDisplayOrder = ? where cID = ? and cvID = ? and arHandle = ? and bID = ?";
+                $db->query($q, $args);
                 $displayOrder++;
             }
             $r->free();

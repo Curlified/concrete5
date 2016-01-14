@@ -106,7 +106,12 @@
                     if (!event_data || !event_data.action || event_data.action !== 'save_inline') {
                         $.get(action, data,
                             function (r) {
-                                var newBlock = block.replace(r);
+                                var realBlock = my.getBlockByID(block.getId());
+                                if (!realBlock) {
+                                    return;
+                                }
+
+                                var newBlock = realBlock.replace(r);
                                 _.defer(function () {
                                     ConcreteEvent.fire('EditModeExitInlineComplete', {
                                         block: newBlock
@@ -121,7 +126,10 @@
                     }
                 });
 
-                ConcreteMenuManager.disable();
+                // We can't just wholesale disable the menu manager even though that makes
+                // it so that you can't click on blocks while they're disabled, because we
+                // need the file manager menu when editing block design.
+//              ConcreteMenuManager.disable();
                 ConcreteToolbar.disable();
                 $('div.ccm-area').addClass('ccm-area-inline-edit-disabled');
                 block.getElem().addClass('ccm-block-edit-inline-active');
@@ -244,13 +252,13 @@
             });
 
             Concrete.event.bind('EditModeBlockAddToClipboard', function (event, data) {
-                var block = data.block, area = block.getArea();
+                var block = data.block, area = block.getArea(), token = data.token;
                 ConcreteToolbar.disableDirectExit();
                 // got to grab the message too, eventually
                 $.ajax({
                     type: 'POST',
                     url: CCM_TOOLS_PATH + '/pile_manager',
-                    data: 'cID=' + block.getCID() + '&bID=' + block.getId() + '&arHandle=' + encodeURIComponent(area.getHandle()) + '&btask=add&scrapbookName=userScrapbook',
+                    data: 'cID=' + block.getCID() + '&bID=' + block.getId() + '&arHandle=' + encodeURIComponent(area.getHandle()) + '&btask=add&scrapbookName=userScrapbook&ccm_token=' + encodeURIComponent(token),
                     success: function (resp) {
                         ConcreteAlert.notify({
                             'message': ccmi18n.copyBlockToScrapbookMsg,
@@ -366,6 +374,8 @@
                         block: block.getId(),
                         blocks: []
                     };
+
+                targetArea = targetArea.inEditMode(targetArea.getEditMode());
 
                 _(targetArea.getBlocks()).each(function (block, key) {
                     send.blocks.push(block.getId());
@@ -509,9 +519,31 @@
             return panel;
         },
 
-        getAreaByID: function areaGetByID(arID) {
+        getAreaByID: function editModeGetAreaByID(arID) {
             var areas = this.getAreas();
             return _.findWhere(areas, {id: parseInt(arID)});
+        },
+
+        getBlockByID: function editModeGetBockByID(blockID) {
+            var areas = this.getAreas(), match = null;
+
+            _(areas).every(function(area) {
+                if (match) {
+                    return false;
+                }
+                _(area.getBlocks()).every(function(block) {
+                    if (block.getId() == blockID) {
+                        match = block;
+                        return false;
+                    }
+
+                    return true;
+                });
+
+                return true;
+            });
+
+            return match;
         },
 
         /**

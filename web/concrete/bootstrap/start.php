@@ -16,17 +16,11 @@ if (basename($_SERVER['PHP_SELF']) == DISPATCHER_FILENAME_CORE) {
  */
 use Concrete\Core\Application\Application;
 use Concrete\Core\Asset\AssetList;
-use Concrete\Core\Config\DatabaseLoader;
-use Concrete\Core\Config\DatabaseSaver;
-use Concrete\Core\Config\FileLoader;
-use Concrete\Core\Config\FileSaver;
-use Concrete\Core\Config\Repository\Repository as ConfigRepository;
 use Concrete\Core\File\Type\TypeList;
 use Concrete\Core\Foundation\ClassAliasList;
 use Concrete\Core\Foundation\Service\ProviderList;
 use Concrete\Core\Permission\Key\Key as PermissionKey;
 use Concrete\Core\Support\Facade\Facade;
-use Illuminate\Filesystem\Filesystem;
 use Patchwork\Utf8\Bootup as PatchworkUTF8;
 
 /**
@@ -45,6 +39,10 @@ PatchworkUTF8::initAll();
 $cms = require DIR_APPLICATION . '/bootstrap/start.php';
 $cms->instance('app', $cms);
 
+// Bind fully application qualified class names
+$cms->instance('Concrete\Core\Application\Application', $cms);
+$cms->instance('Illuminate\Container\Container', $cms);
+
 /**
  * ----------------------------------------------------------------------------
  * Bind the IOC container to our facades
@@ -60,12 +58,12 @@ Facade::setFacadeApplication($cms);
  */
 require DIR_BASE_CORE . '/bootstrap/paths.php';
 
-
 /**
  * ----------------------------------------------------------------------------
  * Add install environment detection
  * ----------------------------------------------------------------------------
  */
+$db_config = array();
 if (file_exists(DIR_APPLICATION . '/config/database.php')) {
     $db_config = include DIR_APPLICATION . '/config/database.php';
 }
@@ -80,18 +78,22 @@ $cms->detectEnvironment(function() use ($db_config, $environment, $cms) {
 });
 
 /**
+ * Enable configuration
+ */
+$config_provider = $app->make('Concrete\Core\Config\ConfigServiceProvider');
+$config_provider->register();
+
+/**
+ * @var Concrete\Core\Config\Repository\Repository $config
+ */
+$config = $app->make('config');
+
+/*
  * ----------------------------------------------------------------------------
- * Enable Filesystem Config.
+ * Finalize paths.
  * ----------------------------------------------------------------------------
  */
-if (!$cms->bound('config')) {
-    $file_system = new Filesystem();
-    $file_loader = new FileLoader($file_system);
-    $file_saver = new FileSaver($file_system);
-    $cms->instance('config', new ConfigRepository($file_loader, $file_saver, $cms->environment()));
-}
-
-$config = $cms->make('config');
+require DIR_BASE_CORE . '/bootstrap/paths_configured.php';
 
 /**
  * ----------------------------------------------------------------------------
@@ -121,24 +123,15 @@ $list->registerMultiple($config->get('app.facades'));
 
 /**
  * ----------------------------------------------------------------------------
- * Set up Database Config.
- * ----------------------------------------------------------------------------
- */
-
-if (!$cms->bound('config/database')) {
-    $database_loader = new DatabaseLoader();
-    $database_saver = new DatabaseSaver();
-    $cms->instance('config/database', new ConfigRepository($database_loader, $database_saver, $cms->environment()));
-}
-
-$database_config = $cms->make('config/database');
-
-/**
- * ----------------------------------------------------------------------------
  * Setup the core service groups.
  * ----------------------------------------------------------------------------
  */
 $list = new ProviderList($cms);
+
+// Register events first so that they can be used by other providers.
+$list->registerProvider($config->get('app.providers.core_events'));
+
+// Register all other providers
 $list->registerProviders($config->get('app.providers'));
 
 /**
@@ -200,6 +193,22 @@ include DIR_APPLICATION . '/bootstrap/app.php';
 
 /**
  * ----------------------------------------------------------------------------
+ * Set trusted proxies and headers for the request
+ * ----------------------------------------------------------------------------
+ */
+
+if($proxyHeaders = $config->get('concrete.security.trusted_proxies.headers')){
+    foreach($proxyHeaders as $key => $value) {
+        Request::setTrustedHeaderName($key, $value);
+    }
+}
+
+if($trustedProxiesIps = $config->get('concrete.security.trusted_proxies.ips')) {
+    Request::setTrustedProxies($trustedProxiesIps);
+}
+
+/**
+ * ----------------------------------------------------------------------------
  * Obtain the Request object.
  * ----------------------------------------------------------------------------
  */
@@ -238,6 +247,13 @@ if ($response) {
 
 /**
  * ----------------------------------------------------------------------------
+ * Now we load all installed packages, and register their package autoloaders.
+ * ----------------------------------------------------------------------------
+ */
+$cms->setupPackageAutoloaders();
+
+/**
+ * ----------------------------------------------------------------------------
  * Load preprocess items
  * ----------------------------------------------------------------------------
  */
@@ -262,7 +278,8 @@ $cms->handleAutomaticUpdates();
 
 /**
  * ----------------------------------------------------------------------------
- * Now we load all installed packages, and run package events on them.
+ * Now that we have languages out of the way, we can run our package on_start
+ * methods
  * ----------------------------------------------------------------------------
  */
 $cms->setupPackages();

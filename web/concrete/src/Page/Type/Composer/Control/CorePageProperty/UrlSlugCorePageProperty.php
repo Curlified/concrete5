@@ -9,8 +9,12 @@ class UrlSlugCorePageProperty extends CorePageProperty
     public function __construct()
     {
         $this->setCorePagePropertyHandle('url_slug');
-        $this->setPageTypeComposerControlName(tc('PageTypeComposerControlName', 'URL Slug'));
         $this->setPageTypeComposerControlIconSRC(ASSETS_URL . '/attributes/text/icon.png');
+    }
+
+    public function getPageTypeComposerControlName()
+    {
+        return tc('PageTypeComposerControlName', 'URL Slug');
     }
 
     public function publishToPage(Page $c, $data, $controls)
@@ -24,8 +28,8 @@ class UrlSlugCorePageProperty extends CorePageProperty
         $e = Loader::helper('validation/error');
         $handle = $this->getPageTypeComposerControlDraftValue();
         if (!$handle) {
-            $e->add(t('You must specify a URL slug.'));
-
+            $control = $this->getPageTypeComposerFormLayoutSetControlObject();
+            $e->add(t('You haven\'t chosen a valid %s', $control->getPageTypeComposerControlLabel()));
             return $e;
         }
     }

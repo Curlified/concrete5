@@ -7,15 +7,20 @@ use Core;
 class CustomStyle extends AbstractCustomStyle
 {
 
-    protected $arHandle;
-    protected $bID;
     protected $set;
+    protected $theme;
 
-    public function __construct(StyleSet $set = null, $bID, $arHandle)
+    public function __construct(StyleSet $set = null, Block $b, $theme = null)
     {
-        $this->arHandle = $arHandle;
-        $this->bID = $bID;
+        $this->block = $b;
         $this->set = $set;
+        $this->theme = $theme;
+    }
+
+    public function getStyleWrapper($css)
+    {
+        $style = '<style type="text/css" data-area-style-area-handle="' . $this->block->getAreaHandle() . '" data-block-style-block-id="' . $this->block->getBlockID() . '" data-style-set="' . $this->getStyleSet()->getID() . '">' . $css . '</style>';
+        return $style;
     }
 
     public function getCSS()
@@ -29,6 +34,8 @@ class CustomStyle extends AbstractCustomStyle
         if (is_object($f)) {
             $groups[''][] = 'background-image: url(' . $f->getRelativePath() . ')';
             $groups[''][] = 'background-repeat: ' . $set->getBackgroundRepeat();
+            $groups[''][] = 'background-size: ' . $set->getBackgroundSize();
+            $groups[''][] = 'background-position: ' . $set->getBackgroundPosition();
         }
         if ($set->getBaseFontSize()) {
             $groups[''][] = 'font-size:' . $set->getBaseFontSize();
@@ -96,20 +103,37 @@ class CustomStyle extends AbstractCustomStyle
 
         $css = '';
         foreach($groups as $suffix => $styles) {
-            $css .= '.' . str_replace(' ', '.', $this->getContainerClass()) . $suffix . '{'.implode(';', $styles).'}';
+            $css .= '.' . str_replace(' ', '.', $this->getCustomStyleClass()) . $suffix . '{'.implode(';', $styles).'}';
         }
         return $css;
     }
 
-    public function getContainerClass()
+    public function getCustomStyleClass()
     {
         $class = 'ccm-custom-style-container ccm-custom-style-';
         $txt = Core::make('helper/text');
-        $class .= strtolower($txt->filterNonAlphaNum($this->arHandle));
-        $class .= '-' . $this->bID;
-        if (is_object($this->set) && $this->set->getCustomClass()) {
-            $class .= ' ' . $this->set->getCustomClass();
-        }
+        $class .= strtolower($txt->filterNonAlphaNum($this->block->getAreaHandle()));
+        $class .= '-' . $this->block->getBlockID();
         return $class;
+    }
+
+    public function getContainerClass()
+    {
+        $classes = array($this->getCustomStyleClass());
+        if ($this->block->getBlockFilename()) {
+            $template = $this->block->getBlockFilename();
+            $template = str_replace('.php', '', $template);
+            $template = str_replace('_', '-', $template);
+            $classes[] = 'ccm-block-custom-template-' . $template;
+        }
+        if (is_object($this->set)) {
+            if ($this->set->getCustomClass()) {
+                $classes[] = $this->set->getCustomClass();
+            }
+            if (is_object($this->theme) && ($gf = $this->theme->getThemeGridFrameworkObject())) {
+                $classes = array_merge($gf->getPageThemeGridFrameworkSelectedDeviceHideClassesForDisplay($this->set, $this->block->getBlockCollectionObject()), $classes);
+            }
+        }
+        return implode(' ', $classes);
     }
 }

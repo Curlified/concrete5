@@ -104,7 +104,7 @@
             height: '100%',
             href: CCM_TOOLS_PATH + '/sitemap_search_selector',
             modal: true,
-            title: ccmi18n_filemanager.title,
+            title: ccmi18n_sitemap.pageLocationTitle,
             onClose: function() {
                 ConcreteEvent.fire('PageSelectorClose');
             },
@@ -185,7 +185,7 @@
                 '<li data-sitemap-mode="explore"><a href="' + CCM_DISPATCHER_FILENAME + '/dashboard/sitemap/explore?cNodeID=<%=item.cID%>&task=send_to_bottom">' + ccmi18n_sitemap.sendToBottom + '</a></li>' +
                 '<% if (item.numSubpages > 0) { %>' +
                 '<li class="divider"></li>' +
-                '<li><a href="' + CCM_DISPATCHER_FILENAME + '/dashboard/sitemap/search/?selectedSearchField[]=parent&cParentAll=1&cParentIDSearchField=<%=item.cID%>">' + ccmi18n_sitemap.searchPages + '</a></li>' +
+                '<li><a href="' + CCM_DISPATCHER_FILENAME + '/dashboard/sitemap/search/?submitSearch=1&field[]=parent&cParentAll=1&cParentIDSearchField=<%=item.cID%>">' + ccmi18n_sitemap.searchPages + '</a></li>' +
                 '<li><a href="' + CCM_DISPATCHER_FILENAME + '/dashboard/sitemap/explore/-/<%=item.cID%>">' + ccmi18n_sitemap.explorePages + '</a></li>' +
                 '<% } %>' +
                 '<% if (item.canAddExternalLinks || item.canAddSubpages) { %>' +

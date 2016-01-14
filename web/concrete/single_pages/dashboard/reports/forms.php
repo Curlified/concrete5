@@ -119,7 +119,7 @@ $db = Loader::db();
                             <input type="hidden" name="action" value="deleteFormAnswers"/>
                             <?php $valt->output('deleteFormAnswers') ?>
                             <div class="btn-group">
-                                <a href="<?= DIR_REL . '/index.php?cID=' . $c->getCollectionID() . '&qsid=' . $qsid ?>"
+                                <a href="<?= URL::to($c->getCollectionPath() . '?qsid=' . $qsid) ?>"
                                    class="btn btn-default btn-sm">
                                     <?= t('View Responses') ?>
                                 </a>
@@ -286,7 +286,7 @@ else {
                                 <input type="hidden" name="asid" value="<?= intval($answerSet['asID']) ?>"/>
                                 <input type="hidden" name="action" value="deleteResponse"/>
                                 <?php $valt->output('deleteResponse') ?>
-                                <?= $ih->submit(t('Delete'), false, 'left', 'btn pull-right btn-danger') ?>
+                                <?= $ih->submit(t('Delete'), false, 'left', 'btn pull-right btn-danger delete-response') ?>
                             </form>
                         </td>
                     </tr>

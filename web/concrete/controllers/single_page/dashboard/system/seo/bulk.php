@@ -12,6 +12,7 @@ class Bulk extends DashboardPageController {
 
 	public function view() {
 		$html = Loader::helper('html');
+		$this->requireAsset('javascript','jquery/textcounter');
 		$pageList = $this->getRequestedSearchResults();
 		if (is_object($pageList)) {
             $pagination = $pageList->getPagination();
@@ -39,7 +40,6 @@ class Bulk extends DashboardPageController {
 		if (trim(htmlspecialchars($c->getCollectionDescription(), ENT_COMPAT, APP_CHARSET)) != trim($this->post('meta_description')) && $this->post('meta_description'))  {
         	$c->setAttribute('meta_description', trim($this->post('meta_description')));
 		}
-    	$c->setAttribute('meta_keywords',$this->post('meta_keywords'));
         $cHandle = $this->post('collection_handle');
         $c->update(array('cHandle'=>$cHandle));
         $c->rescanCollectionPath();
@@ -97,12 +97,6 @@ class Bulk extends DashboardPageController {
 
 		if ($req['ptID']) {
 			$pageList->filterByPageTypeID($req['ptID']);
-		}
-
-		if ($_REQUEST['noKeywords'] == 1){
-			$pageList->filter('CollectionSearchIndexAttributes.ak_meta_keywords', NULL ,'=');
-			$this->set('keywordCheck', true);
-			$parentDialogOpen = 1;
 		}
 
 		if ($_REQUEST['noDescription'] == 1){

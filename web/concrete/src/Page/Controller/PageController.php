@@ -49,6 +49,8 @@ class PageController extends Controller
             $var = \Page::getByPath($var);
         }
 
+        $request = \Request::getInstance();
+        $request->setCurrentPage($var);
         $controller = $var->getPageController();
         $controller->on_start();
         $controller->runAction('view');
@@ -58,6 +60,21 @@ class PageController extends Controller
         exit;
     }
 
+    public function getSets()
+    {
+        $sets = parent::getSets();
+        $session = Core::make('session');
+        if ($session->getFlashBag()->has('page_message')) {
+            $value = $session->getFlashBag()->get('page_message');
+            foreach($value as $message) {
+                $sets[$message[0]] = $message[1];
+            }
+        }
+        return $sets;
+    }
+
+
+
     /**
      * Given a path to a single page, this command uses the CURRENT controller and renders
      * the contents of the single page within this request. The current controller is not
@@ -66,7 +83,7 @@ class PageController extends Controller
      *
      * @param @string
      */
-    public function render($path)
+    public function render($path, $pkgHandle = null)
     {
         $view = $this->getViewObject();
 
@@ -76,6 +93,9 @@ class PageController extends Controller
         $b = $path . '.php';
 
         $r = $env->getRecord(DIRNAME_PAGES . '/' . $a);
+        if ($pkgHandle) {
+            $view->setPackageHandle($pkgHandle);
+        }
         if ($r->exists()) {
             $view->renderSinglePageByFilename($a);
         } else {
@@ -86,6 +106,12 @@ class PageController extends Controller
     public function getPageObject()
     {
         return $this->c;
+    }
+
+    public function flash($key, $value)
+    {
+        $session = Core::make('session');
+        $session->getFlashBag()->add('page_message', array($key, $value));
     }
 
     public function getTheme()

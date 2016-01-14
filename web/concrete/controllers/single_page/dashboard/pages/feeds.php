@@ -73,6 +73,7 @@ class Feeds extends DashboardPageController
         $pf->setParentID(intval($this->post('cParentID')));
         $pf->setIncludeAllDescendents($this->post('pfIncludeAllDescendents'));
         $pf->setDisplayAliases($this->post('pfDisplayAliases'));
+        $pf->setIconFileID($this->post('iconFID'));
         $pf->setDisplayFeaturedOnly($this->post('pfDisplayFeaturedOnly'));
         if ($this->post('pfContentToDisplay') == 'A') {
             $pf->displayAreaContent($this->post('pfAreaHandleToDisplay'));
@@ -140,7 +141,7 @@ class Feeds extends DashboardPageController
         $this->set('pageTypes', $pageTypes);
 
         $attributeKeys = array();
-        $keys = CollectionKey::getList(array('atHandle' => 'topics'));
+        $keys = CollectionKey::getList();
         foreach ($keys as $ak) {
             if ($ak->getAttributeTypeHandle() == 'topics') {
                 $attributeKeys[] = $ak;

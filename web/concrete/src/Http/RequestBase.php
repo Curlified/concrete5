@@ -50,7 +50,7 @@ class RequestBase extends SymfonyRequest
     protected $c;
 
     /**
-     * @return SymfonyRequest
+     * @return static
      */
     public static function getInstance()
     {
@@ -83,6 +83,11 @@ class RequestBase extends SymfonyRequest
     public function setCurrentPage(\Concrete\Core\Page\Page $c)
     {
         $this->c = $c;
+    }
+
+    public function clearCurrentPage()
+    {
+        $this->c = null;
     }
 
     /**
@@ -200,6 +205,6 @@ class RequestBase extends SymfonyRequest
      */
     public static function isPost()
     {
-        return $_SERVER['REQUEST_METHOD'] == 'POST';
+        return isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] == 'POST';
     }
 }

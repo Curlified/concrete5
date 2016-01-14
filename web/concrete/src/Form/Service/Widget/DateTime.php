@@ -139,7 +139,7 @@ class DateTime
             }
             $html .= '>';
             // This prints out the translation of "AM" in the current language
-            $html .= $dh->date('A', mktime(1));
+            $html .= $dh->date('A', mktime(1), 'app');
             $html .= '</option>';
             $html .= '<option value="PM" ';
             if ($timeAMPM == 'PM') {
@@ -147,7 +147,7 @@ class DateTime
             }
             $html .= '>';
             // This prints out the translation of "PM" in the current language
-            $html .= $dh->date('A', mktime(13));
+            $html .= $dh->date('A', mktime(13), 'app');
             $html .= '</option>';
             $html .= '</select>';
         }
@@ -160,7 +160,15 @@ class DateTime
                     altFormat: "yy-mm-dd",
                     altField: "#' . $id . '_dt",
                     changeYear: true,
-                    showAnim: \'fadeIn\'
+                    showAnim: \'fadeIn\',
+                    onClose: function(dateText, inst) {
+                        if(dateText == "") {
+                            var altField = $(inst.settings["altField"]);
+                            if(altField.length) {
+                                altField.val(dateText);
+                            }
+                        }
+                    }
                 }).datepicker("setDate" , ' . $defaultDateJs . '); })</script>';
         }
         // first we add a calendar input
@@ -232,7 +240,15 @@ EOS;
                     altFormat: "yy-mm-dd",
                     altField: "#' . $id . '",
                     changeYear: true,
-                    showAnim: \'fadeIn\'
+                    showAnim: \'fadeIn\',
+                    onClose: function(dateText, inst) {
+                        if(dateText == "") {
+                            var altField = $(inst.settings["altField"]);
+                            if(altField.length) {
+                                altField.val(dateText);
+                            }
+                        }
+                    }
                 }).datepicker( "setDate" , ' . $defaultDateJs . ' ); });</script>';
         }
 

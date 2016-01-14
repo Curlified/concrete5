@@ -51,6 +51,11 @@ $r = new \Concrete\Core\Http\Request(
  */
 $cms = require $DIR_BASE_CORE . '/bootstrap/start.php';
 
+/**
+ * Test more strictly than core settings
+ */
+error_reporting(E_ALL & ~E_STRICT & ~E_DEPRECATED);
+
 
 class TestConfigRepository extends Repository {
 
@@ -96,7 +101,13 @@ $config->set('concrete.cache.blocks', false);
 $config->set('concrete.cache.pages', false);
 $config->set('concrete.cache.enabled', false);
 
+/** @var Concrete\Core\Database\Connection\Connection $cn */
 $cn = $cms->make('database')->connection('travisWithoutDB');
+$cn->connect();
+if (!$cn->isConnected()) {
+    throw new \Exception('Unable to connect to test database, please create a user "travis" with no password with full privileges to a database "concrete5_tests"');
+}
+
 $cn->query('DROP DATABASE IF EXISTS concrete5_tests');
 $cn->query('CREATE DATABASE concrete5_tests');
 $cn->close();

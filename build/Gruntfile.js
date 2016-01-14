@@ -117,6 +117,8 @@ module.exports = function(grunt) {
                 '<%= DIR_BASE %>/concrete/js/build/core/app/help/guides/toolbar.js',
                 '<%= DIR_BASE %>/concrete/js/build/core/app/help/guides/change-content.js',
                 '<%= DIR_BASE %>/concrete/js/build/core/app/help/guides/change-content-edit-mode.js',
+                '<%= DIR_BASE %>/concrete/js/build/core/app/help/guides/add-content.js',
+                '<%= DIR_BASE %>/concrete/js/build/core/app/help/guides/add-content-edit-mode.js',
                 '<%= DIR_BASE %>/concrete/js/build/core/app/help/guides/add-page.js',
                 '<%= DIR_BASE %>/concrete/js/build/core/app/help/guides/personalize.js',
                 '<%= DIR_BASE %>/concrete/js/build/core/app/help/guides/dashboard.js',
@@ -201,8 +203,18 @@ module.exports = function(grunt) {
         jquery_fileupload: {
             dest: '<%= DIR_BASE %>/concrete/js/jquery-fileupload.js',
             src: [
+                '<%= DIR_BASE %>/concrete/js/build/vendor/jquery-fileupload/load-image.js',
+                '<%= DIR_BASE %>/concrete/js/build/vendor/jquery-fileupload/load-image-ios.js',
+                '<%= DIR_BASE %>/concrete/js/build/vendor/jquery-fileupload/load-image-orientation.js',
+                '<%= DIR_BASE %>/concrete/js/build/vendor/jquery-fileupload/load-image-meta.js',
+                '<%= DIR_BASE %>/concrete/js/build/vendor/jquery-fileupload/load-image-exif.js',
+                '<%= DIR_BASE %>/concrete/js/build/vendor/jquery-fileupload/load-image-exif-map.js',
+                '<%= DIR_BASE %>/concrete/js/build/vendor/jquery-fileupload/javascript-canvas-to-blob.js',
+                '<%= DIR_BASE %>/concrete/js/build/vendor/jquery-fileupload/javascript-canvas-to-blob.js',
                 '<%= DIR_BASE %>/concrete/js/build/vendor/jquery-fileupload/jquery-iframe-transport.js',
-                '<%= DIR_BASE %>/concrete/js/build/vendor/jquery-fileupload/jquery-fileupload.js'
+                '<%= DIR_BASE %>/concrete/js/build/vendor/jquery-fileupload/jquery-fileupload.js',
+                '<%= DIR_BASE %>/concrete/js/build/vendor/jquery-fileupload/jquery-fileupload-process.js',
+                '<%= DIR_BASE %>/concrete/js/build/vendor/jquery-fileupload/jquery-fileupload-image.js'
             ]
         },
 
@@ -210,7 +222,6 @@ module.exports = function(grunt) {
             dest: '<%= DIR_BASE %>/concrete/js/dropzone.js',
             src: '<%= DIR_BASE %>/concrete/js/build/vendor/dropzone/dropzone.js'
         },
-
 
         jquery_form: {
             dest: '<%= DIR_BASE %>/concrete/js/jquery-form.js',
@@ -265,7 +276,8 @@ module.exports = function(grunt) {
                 '<%= DIR_BASE %>/concrete/js/build/core/sitemap/sitemap.js',
                 '<%= DIR_BASE %>/concrete/js/build/core/sitemap/menu.js',
                 '<%= DIR_BASE %>/concrete/js/build/core/sitemap/search.js',
-                '<%= DIR_BASE %>/concrete/js/build/core/sitemap/selector.js'
+                '<%= DIR_BASE %>/concrete/js/build/core/sitemap/selector.js',
+                '<%= DIR_BASE %>/concrete/js/build/core/sitemap/sitemap-selector.js'
             ]
         },
 
@@ -300,6 +312,10 @@ module.exports = function(grunt) {
             ]
         },
 
+        ccm_frontend_parallax_image: {
+            dest: '<%= DIR_BASE %>/concrete/js/frontend/parallax-image.js',
+            src: '<%= DIR_BASE %>/concrete/js/build/core/frontend/parallax-image.js'
+        },
 
         ccm_gathering: {
             dest: '<%= DIR_BASE %>/concrete/js/gathering.js',
@@ -332,6 +348,10 @@ module.exports = function(grunt) {
         ccm_translator: {
             dest: '<%= DIR_BASE %>/concrete/js/translator.js',
             src: '<%= DIR_BASE %>/concrete/js/build/core/translator.js'
+        },
+        jquery_text_counter: {
+            dest: '<%= DIR_BASE %>/concrete/js/textcounter.js',
+            src: '<%= DIR_BASE %>/concrete/js/build/vendor/jquery-text-counter/textcounter.js'
         }
     };
 
@@ -351,6 +371,7 @@ module.exports = function(grunt) {
         '<%= DIR_BASE %>/concrete/css/app.css': '<%= DIR_BASE %>/concrete/css/build/core/app/app.less',
         '<%= DIR_BASE %>/concrete/css/editable-fields.css': '<%= DIR_BASE %>/concrete/css/build/core/editable-fields.less',
         '<%= DIR_BASE %>/concrete/css/select2.css': '<%= DIR_BASE %>/concrete/css/build/core/select2.less',
+        '<%= DIR_BASE %>/concrete/css/dropzone.css': '<%= DIR_BASE %>/concrete/css/build/vendor/dropzone/dropzone.less',
         '<%= DIR_BASE %>/concrete/css/jquery-ui.css': '<%= DIR_BASE %>/concrete/css/build/vendor/jquery-ui/jquery-ui.less',
         '<%= DIR_BASE %>/concrete/css/jquery-magnific-popup.css': '<%= DIR_BASE %>/concrete/css/build/vendor/jquery-magnific-popup/jquery-magnific-popup.less',
         '<%= DIR_BASE %>/concrete/css/jquery-awesome-rating.css': '<%= DIR_BASE %>/concrete/css/build/vendor/jquery-awesome-rating/jquery-awesome-rating.less',
@@ -492,14 +513,6 @@ module.exports = function(grunt) {
 
     grunt.registerTask('remove-short-tags', 'Remove short tags.', function() {
         require('./tasks/remove-short-tags.js')(grunt, config, parameters, this.async());
-    });
-
-    grunt.registerTask('generate-symbols', 'Generate IDE symbols', function() {
-        require('./tasks/generate-symbols.js')(grunt, config, parameters, this.async());
-    });
-
-    grunt.registerTask('generate-metadata', 'Generate PhpStorm advanced metadata', function() {
-        require('./tasks/generate-metadata.js')(grunt, config, parameters, this.async());
     });
 
     grunt.registerTask('build-release-download', 'Build process: download the latest concrete5 release from GitHub.', function() {

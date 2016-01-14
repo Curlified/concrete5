@@ -1,6 +1,7 @@
 <?php
 namespace Concrete\Core\Conversation\Message;
 
+use Concrete\Core\User\Avatar\EmptyAvatar;
 use Concrete\Core\User\UserInfo;
 
 class AuthorFormatter
@@ -26,8 +27,12 @@ class AuthorFormatter
         } else {
             $name = t('Anonymous');
         }
-        if ($this->author->getWebsite()) {
-            return sprintf('<a href="%s">%s</a>', h($this->author->getWebsite()), $name);
+        if (is_object($ui) && ($profileURL = $ui->getUserPublicProfileUrl())) {
+            return sprintf('<a href="%s">%s</a>', $profileURL, h($name));
+        } else if ($this->author->getWebsite()) {
+            return sprintf('<a href="%s">%s</a>', h($this->author->getWebsite()), h($name));
+        } else {
+            return h($name);
         }
     }
 
@@ -42,8 +47,8 @@ class AuthorFormatter
             $link = \URL::to('/dashboard/users/search', 'view', $ui->getUserID());
             $name = $ui->getUserDisplayName();
         } else if ($this->author->getName()) {
-            $link = 'mailto:' . $this->author->getEmail();
-            $name = $this->author->getName();
+            $link = 'mailto:' . h($this->author->getEmail());
+            $name = h($this->author->getName());
         } else {
             return t('Anonymous');
         }
@@ -56,13 +61,10 @@ class AuthorFormatter
     public function getAvatar()
     {
         $ui = $this->author->getUser();
-        $useGravatars = \Config::get('concrete.user.gravatar.enabled');
-        $av = \Core::make('helper/concrete/avatar');
-        if (is_object($ui) || !$useGravatars) {
-            return $av->outputUserAvatar($ui);
+        if (is_object($ui)) {
+            return $ui->getUserAvatar()->output();
         } else {
-            // we try to use the gravatar with the author email address.
-            return '<img src="' . $av->getGravatar($this->author->getEmail()) . '" />';
+            return \Core::make('Concrete\Core\User\Avatar\EmptyAvatar')->output();
         }
     }
 }
